@@ -1,0 +1,8 @@
+{
+  "name": "cordova-plugin-instagram-stories",
+  "version": "1.0.0",
+  "cordova": {
+    "id": "cordova-plugin-instagram-stories"
+  },
+  "description": "A starting point for a Cordova Plugin"
+}

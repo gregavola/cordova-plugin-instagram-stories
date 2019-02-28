@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    id="cordova-plugin-instagram-stories"
+    version="1.0.0">
+    <name>Cordova Instagram Stories</name>
+    <description></description>
+
+    <!-- android -->
+    <platform name="android">
+      <js-module src="www/igstory.js" name="igstory">
+        <runs/>
+        <clobbers target="IGStory" />
+      </js-module>
+      <config-file target="res/xml/config.xml" parent="/*">
+        <feature name="IGStory">
+          <param name="android-package" value="com.cordova.plugin.IGStory" />
+          <param name="onload" value="true" />
+        </feature>
+      </config-file>
+
+      <config-file target="AndroidManifest.xml" parent="/manifest/application">
+        <provider android:authorities="${applicationId}.provider" android:exported="false" android:grantUriPermissions="true" android:name="com.cordova.plugin.utils.AssetProvider">
+          <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/instagramplugin_provider_paths" />
+        </provider>
+    </config-file>
+
+      <source-file
+            src="src/android/com/cordova/plugin/xml/instagramplugin_provider_paths.xml"
+            target-dir="res/xml" />
+
+
+      <source-file src="src/android/com/cordova/plugin/IGStory.java" target-dir="src/com/cordova/plugin" />
+      <source-file src="src/android/com/cordova/plugin/utils/AssetProvider.java" target-dir="src/com/cordova/plugin/utils" />
+    </platform>
+
+    <!-- ios -->
+    <platform name="ios">
+        <js-module src="www/igstory.js" name="igstory">
+            <runs/>
+            <clobbers target="IGStory" />
+        </js-module>
+        <config-file target="config.xml" parent="/*">
+            <feature name="IGStory">
+                <param name="ios-package" value="IGStory" onload="true" />
+            </feature>
+        </config-file>
+
+        <header-file src="src/ios/IGStory.h" />
+        <source-file src="src/ios/IGStory.m" />
+    </platform>
+</plugin>
