@@ -6,7 +6,7 @@ This is a simple plugin that allows to share content to Instagram Stories using 
 
 ## Installation
 
-`cordova plugin add `
+`cordova plugin add https://github.com/gregavola/cordova-plugin-instagram-stories`
 
 ## Usage
 
