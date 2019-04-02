@@ -12,14 +12,11 @@ import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
 import android.content.pm.PackageManager;
+import java.io.ByteArrayOutputStream;
 
 import android.util.Log;
 
-import java.net.URLConnection;
-import java.io.DataOutputStream;
-import java.io.DataInputStream;
 import java.io.FileOutputStream;
-import java.io.FileNotFoundException;
 import android.net.Uri;
 import android.content.Intent;
 import android.app.Activity;
@@ -27,6 +24,8 @@ import  java.net.URL;
 import java.io.File;
 import java.io.IOException;
 import android.support.v4.content.FileProvider;
+import java.io.InputStream;
+import android.os.Build;
 
 public class IGStory extends CordovaPlugin {
   private static final String TAG = "IGStory";
@@ -54,63 +53,92 @@ public class IGStory extends CordovaPlugin {
         Log.e(TAG, stickerAssetUrl);
         Log.e(TAG, attributionLinkUrl);
 
-        if (backgroundTopColor != "" && backgroundBottomColor != "") {
-
+        if (!backgroundTopColor.isEmpty() && !backgroundBottomColor.isEmpty()) {
+          Log.e(TAG, "TOP COLOR HERE");
           try {
-            File stickerImageFile = null;
-            FileOutputStream os = null;
-
             File parentDir = this.webView.getContext().getExternalFilesDir(null);
+            File stickerImageFile = File.createTempFile("instagramSticker", ".png", parentDir);
+            Uri stickerUri = null;
 
-            stickerImageFile = File.createTempFile("instagramSticker", ".png", parentDir);
+            URL u = new URL(stickerAssetUrl);
+            saveImage(u, stickerImageFile);
 
-            downloadFile(stickerAssetUrl, stickerImageFile);
-
-            Uri stickerUri = FileProvider.getUriForFile(this.cordova.getActivity().getBaseContext(), this.cordova.getActivity().getBaseContext().getPackageName() + ".provider" ,stickerImageFile);
+            String type = "image/*";
 
             Intent intent = new Intent("com.instagram.share.ADD_TO_STORY");
-            intent.setType("image/jpeg");
-            intent.putExtra("interactive_asset_uri", stickerUri);
+            intent.setType(type);
             intent.putExtra("content_url", attributionLinkUrl);
             intent.putExtra("top_background_color", backgroundTopColor);
             intent.putExtra("bottom_background_color", backgroundBottomColor);
+
+
+            /*if (Build.VERSION.SDK_INT < 26) {
+              // Handle the file uri with pre Oreo method
+              stickerUri = Uri.fromFile(stickerImageFile);
+              intent.putExtra("interactive_asset_uri", stickerUri);
+            } else {*/
+              // Handle the file URI using Android Oreo file provider
+              FileProvider FileProvider = new FileProvider();
+              stickerUri = FileProvider.getUriForFile(this.cordova.getActivity().getBaseContext(), this.cordova.getActivity().getBaseContext().getPackageName() + ".provider" ,stickerImageFile);
+              intent.putExtra("interactive_asset_uri", stickerUri);
+            //}
 
             // Instantiate activity and verify it will resolve implicit intent
             Activity activity = this.cordova.getActivity();
             activity.grantUriPermission(
                     "com.instagram.android", stickerUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
+            //this.cordova.startActivityForResult(this, intent, 0);
+            Log.e(TAG,Build.VERSION.SDK);
             activity.startActivityForResult(intent, 0);
             callbackContext.success("shared");
           } catch (Exception e) {
+            Log.e(TAG, "We have an exception!");
+            Log.e(TAG, e.getMessage());
             callbackContext.error(e.getMessage());
           }
 
         } else {
           try {
-
-            File backgroundImageFile = null;
-            File stickerImageFile = null;
-            FileOutputStream os = null;
-
+            Log.e(TAG, "WE HAVE A BACKGROUND");
             File parentDir = this.webView.getContext().getExternalFilesDir(null);
+            File backgroundImageFile = File.createTempFile("instagramBackground", ".png", parentDir);
+            File stickerImageFile = File.createTempFile("instagramSticker", ".png", parentDir);
+            Uri stickerUri = null;
+            Uri backgroundUri = null;
 
-            backgroundImageFile = File.createTempFile("instagramBackground", ".png", parentDir);
-            stickerImageFile = File.createTempFile("instagramSticker", ".png", parentDir);
+            URL stickerURL = new URL(stickerAssetUrl);
+            saveImage(stickerURL, stickerImageFile);
 
-            downloadFile(backgroundImageUrl, backgroundImageFile);
-            downloadFile(stickerAssetUrl, stickerImageFile);
+            URL backgroundURL = new URL(backgroundImageUrl);
+            saveImage(backgroundURL, backgroundImageFile);
 
+            Log.e(TAG, backgroundImageFile.toString());
 
-            Uri backgroundUri = FileProvider.getUriForFile(this.cordova.getActivity().getBaseContext(), this.cordova.getActivity().getBaseContext().getPackageName() + ".provider" ,backgroundImageFile);
-            Uri stickerUri = FileProvider.getUriForFile(this.cordova.getActivity().getBaseContext(), this.cordova.getActivity().getBaseContext().getPackageName() + ".provider" ,stickerImageFile);
+            //Uri backgroundUri = FileProvider.getUriForFile(this.cordova.getActivity().getBaseContext(), this.cordova.getActivity().getBaseContext().getPackageName() + ".provider" ,backgroundImageFile);
+            //Uri stickerUri = FileProvider.getUriForFile(this.cordova.getActivity().getBaseContext(), this.cordova.getActivity().getBaseContext().getPackageName() + ".provider" ,stickerImageFile);
 
             // Instantiate implicit intent with ADD_TO_STORY action,
             // background asset, sticker asset, and attribution link
             Intent intent = new Intent("com.instagram.share.ADD_TO_STORY");
             intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            intent.setDataAndType(backgroundUri, "image/jpeg");
-            intent.putExtra("interactive_asset_uri", stickerUri);
+
+           /* if (Build.VERSION.SDK_INT < 26) {
+              // Handle the file uri with pre Oreo method
+              stickerUri = Uri.fromFile(stickerImageFile);
+              backgroundUri = Uri.fromFile(stickerImageFile);
+              intent.setDataAndType(backgroundUri, "image/*");
+              intent.putExtra("interactive_asset_uri", stickerUri);*/
+            //} else {
+              // Handle the file URI using Android Oreo file provider
+              FileProvider FileProvider = new FileProvider();
+              stickerUri = FileProvider.getUriForFile(this.cordova.getActivity().getBaseContext(), this.cordova.getActivity().getBaseContext().getPackageName() + ".provider" ,stickerImageFile);
+              backgroundUri = FileProvider.getUriForFile(this.cordova.getActivity().getBaseContext(), this.cordova.getActivity().getBaseContext().getPackageName() + ".provider" ,backgroundImageFile);
+
+              intent.setDataAndType(backgroundUri, "image/*");
+              intent.putExtra("interactive_asset_uri", stickerUri);
+           // }
+
             intent.putExtra("content_url", attributionLinkUrl);
 
             // Instantiate activity and verify it will resolve implicit intent
@@ -149,28 +177,45 @@ public class IGStory extends CordovaPlugin {
     return found;
   }
 
+  private byte[] downloadUrl(URL toDownload) {
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-  private static void downloadFile(String url, File outputFile) {
     try {
-      URL u = new URL(url);
-      URLConnection conn = u.openConnection();
-      int contentLength = conn.getContentLength();
+      byte[] chunk = new byte[4096];
+      int bytesRead;
+      InputStream stream = toDownload.openStream();
 
-      DataInputStream stream = new DataInputStream(u.openStream());
+      while ((bytesRead = stream.read(chunk)) > 0) {
+        outputStream.write(chunk, 0, bytesRead);
+      }
 
-      byte[] buffer = new byte[contentLength];
-      stream.readFully(buffer);
-      stream.close();
-
-      DataOutputStream fos = new DataOutputStream(new FileOutputStream(outputFile));
-      fos.write(buffer);
-      fos.flush();
-      fos.close();
-    } catch (FileNotFoundException e) {
-      Log.e(TAG, e.getMessage());
     } catch (IOException e) {
-      Log.e(TAG, e.getMessage());
+      Log.e(TAG, "SAVE ERROR (IO): " + e.getMessage());
+      return null;
+    } catch (Exception e) {
+      Log.e(TAG, "SAVE ERROR (REG): " + e.getMessage());
+      return null;
     }
 
+    return outputStream.toByteArray();
+  }
+
+  private void saveImage(URL pathUrl, File file) {
+    FileOutputStream os = null;
+
+    try {
+      os = new FileOutputStream(file, true);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    try {
+      os.write(downloadUrl(pathUrl));
+      os.flush();
+      os.close();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      Log.e(TAG, "SAVE ERROR: " + e.getMessage());
+    }
   }
 }
