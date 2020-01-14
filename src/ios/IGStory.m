@@ -165,6 +165,8 @@
     }
 }
 
+
+// Pulled from https://github.com/EddyVerbruggen/SocialSharing-PhoneGap-Plugin and slightly modified
 - (NSData *)getImageData:(NSString *)imageName {
   NSData *imageData = nil;
   if (imageName != (id)[NSNull null]) {
