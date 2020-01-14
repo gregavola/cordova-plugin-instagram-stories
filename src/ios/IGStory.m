@@ -61,8 +61,24 @@
             });
         }
     }
+}
 
-    
+- (void)shareImageToStory:(CDVInvokedUrlCommand *)command {
+
+    self.callbackId = command.callbackId;
+
+    NSString* backgroundImage = [command.arguments objectAtIndex:0];
+    NSData *imageData = [self getImageData:backgroundImage];
+    if (!imageData) {
+        CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Missing Image background"];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self finishCommandWithResult:result commandId: command.callbackId];
+        });
+        return;
+    }    
+
+    [self shareBackgroundAndStickerImage:imageData stickerImage:nil attributionURL:nil commandId:command.callbackId];
+
 }
 
 - (void)shareBackgroundAndStickerImage:(NSData *)backgroundImage stickerImage:(NSData *)stickerImage attributionURL:(NSString *)attributionURL commandId:(NSString *)command  {
@@ -147,6 +163,29 @@
             [self finishCommandWithResult:result commandId: command];
         });
     }
+}
+
+- (NSData *)getImageData:(NSString *)imageName {
+  NSData *imageData = nil;
+  if (imageName != (id)[NSNull null]) {
+    if ([imageName hasPrefix:@"http"]) {
+      imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:imageName]];
+    } else if ([imageName hasPrefix:@"file://"]) {
+      imageData = [NSData dataWithContentsOfFile:[[NSURL URLWithString:imageName] path]];
+    } else if ([imageName hasPrefix:@"data:"]) {
+      // using a base64 encoded string
+      NSURL *imageURL = [NSURL URLWithString:imageName];
+      imageData = [NSData dataWithContentsOfURL:imageURL];
+    } else if ([imageName hasPrefix:@"assets-library://"]) {
+      // use assets-library
+      NSURL *imageURL = [NSURL URLWithString:imageName];
+      imageData = [NSData dataWithContentsOfURL:imageURL];
+    } else {
+      // assume anywhere else, on the local filesystem
+      imageData = [NSData dataWithContentsOfFile:imageName];
+    }
+  }
+  return imageData;
 }
 
 - (void)finishCommandWithResult:(CDVPluginResult *)result commandId:(NSString *)command {
