@@ -92,9 +92,15 @@
 
       // Assign background and sticker image assets and
       // attribution link URL to pasteboard
-      NSArray *pasteboardItems = @[@{@"com.instagram.sharedSticker.backgroundImage" : backgroundImage,
-                                     @"com.instagram.sharedSticker.stickerImage" : stickerImage,
-                                     @"com.instagram.sharedSticker.contentURL" : attributionURL}];
+      NSMutableDictionary *pasteboardItemsDictionary = [@{ @"com.instagram.sharedSticker.backgroundImage" : backgroundImage } mutableCopy];
+      if (stickerImage) {
+        pasteboardItemsDictionary[@"com.instagram.sharedSticker.stickerImage"] = stickerImage;
+      }
+      if (attributionURL) {
+        pasteboardItemsDictionary[@"com.instagram.sharedSticker.contentURL"] = attributionURL;
+      }
+
+      NSArray *pasteboardItems = @[pasteboardItemsDictionary];
       NSDictionary *pasteboardOptions = @{UIPasteboardOptionExpirationDate : [[NSDate date] dateByAddingTimeInterval:60 * 5]};
       // This call is iOS 10+, can use 'setItems' depending on what versions you support
       [[UIPasteboard generalPasteboard] setItems:pasteboardItems options:pasteboardOptions];
