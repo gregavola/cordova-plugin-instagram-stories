@@ -23,7 +23,7 @@ import android.app.Activity;
 import  java.net.URL;
 import java.io.File;
 import java.io.IOException;
-import android.support.v4.content.FileProvider;
+import androidx.core.content.FileProvider;
 import java.io.InputStream;
 import android.os.Build;
 
@@ -144,18 +144,24 @@ public class IGStory extends CordovaPlugin {
 
     try {
       File parentDir = this.webView.getContext().getExternalFilesDir(null);
-      File backgroundImageFile = File.createTempFile("instagramBackground", ".png", parentDir);
-      URL backgroundURL = new URL(backgroundImageData);
-      saveImage(backgroundURL, backgroundImageFile);
-      
+      File backgroundImageFile = File.createTempFile("instagramBackground", ".jpeg", parentDir);
+      Log.i(TAG, "made it here");
+
+      saveImage(backgroundImageData, backgroundImageFile);
+
+      Log.i(TAG, "savedImage");
+
       Intent intent = new Intent("com.instagram.share.ADD_TO_STORY");
       intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
       
       FileProvider FileProvider = new FileProvider();
       Uri backgroundUri = FileProvider.getUriForFile(this.cordova.getActivity().getBaseContext(), this.cordova.getActivity().getBaseContext().getPackageName() + ".provider", backgroundImageFile);
 
-      intent.setDataAndType(backgroundUri, "image/*");
+      Log.i(TAG, "got backgroundUri: " + backgroundUri);
 
+      intent.setDataAndType(backgroundUri, "image/jpeg");
+
+      Log.i(TAG, "instantiating activity");
       // Instantiate activity and verify it will resolve implicit intent
       Activity activity = this.cordova.getActivity();
       activity.grantUriPermission("com.instagram.android", backgroundUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -163,6 +169,8 @@ public class IGStory extends CordovaPlugin {
       activity.startActivityForResult(intent, 0);
       callbackContext.success("shared");
     } catch (Exception e) {
+      Log.e(TAG, "error in shareImageToStory");
+      Log.e(TAG, e.getMessage());
       callbackContext.error(e.getMessage());
     }
 
@@ -204,6 +212,25 @@ public class IGStory extends CordovaPlugin {
     }
 
     return outputStream.toByteArray();
+  }
+
+  private void saveImage(String imageData, File file) {
+    FileOutputStream os = null;
+
+    try {
+      os = new FileOutputStream(file, true);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    try {
+      os.write(imageData.getBytes());
+      os.flush();
+      os.close();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      Log.e(TAG, "SAVE ERROR: " + e.getMessage());
+    }
   }
 
   private void saveImage(URL pathUrl, File file) {
