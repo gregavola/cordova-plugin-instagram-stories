@@ -49,7 +49,7 @@ public class IGStory extends CordovaPlugin {
         String backgroundTopColor = args.getString(3);
         String backgroundBottomColor = args.getString(4);
 
-        shareToStory(backgroundImageUrl, stickerAssetUrl, attributionLinkUrl, backgroundTopColor, backgroundBottomColor), callbackContext;
+        shareToStory(backgroundImageUrl, stickerAssetUrl, attributionLinkUrl, backgroundTopColor, backgroundBottomColor, callbackContext);
       } else if (action.equals("shareImageToStory")) {
         String backgroundImageData = args.getString(0);
 
@@ -64,7 +64,7 @@ public class IGStory extends CordovaPlugin {
     return true;
   }
 
-  private Void shareToStory(String backgroundImageUrl, String stickerImageUrl, String attributionLinkUrl, String backgrondTopColor, String backgroundBottomColor, CallbackContext, callbackContext) {
+  private void shareToStory(String backgroundImageUrl, String stickerImageUrl, String attributionLinkUrl, String backgroundTopColor, String backgroundBottomColor, CallbackContext callbackContext) {
 
     if (!backgroundTopColor.isEmpty() && !backgroundBottomColor.isEmpty()) {
       try {
@@ -72,7 +72,7 @@ public class IGStory extends CordovaPlugin {
         File stickerImageFile = File.createTempFile("instagramSticker", ".png", parentDir);
         Uri stickerUri = null;
 
-        URL u = new URL(stickerAssetUrl);
+        URL u = new URL(stickerImageUrl);
         saveImage(u, stickerImageFile);
 
         String type = "image/*";
@@ -108,7 +108,7 @@ public class IGStory extends CordovaPlugin {
         Uri stickerUri = null;
         Uri backgroundUri = null;
 
-        URL stickerURL = new URL(stickerAssetUrl);
+        URL stickerURL = new URL(stickerImageUrl);
         saveImage(stickerURL, stickerImageFile);
 
         URL backgroundURL = new URL(backgroundImageUrl);
@@ -140,25 +140,25 @@ public class IGStory extends CordovaPlugin {
     }
   }
 
-  private Void shareImageToStory(String backgroundImageData, CallbackContext callbackContext) {
+  private void shareImageToStory(String backgroundImageData, CallbackContext callbackContext) {
 
     try {
       File parentDir = this.webView.getContext().getExternalFilesDir(null);
       File backgroundImageFile = File.createTempFile("instagramBackground", ".png", parentDir);
-      URL backgroundURL = new URL(backgroundImageUrl);
+      URL backgroundURL = new URL(backgroundImageData);
       saveImage(backgroundURL, backgroundImageFile);
       
       Intent intent = new Intent("com.instagram.share.ADD_TO_STORY");
       intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
       
       FileProvider FileProvider = new FileProvider();
-      backgroundUri = FileProvider.getUriForFile(this.cordova.getActivity().getBaseContext(), this.cordova.getActivity().getBaseContext().getPackageName() + ".provider", backgroundImageFile);
+      Uri backgroundUri = FileProvider.getUriForFile(this.cordova.getActivity().getBaseContext(), this.cordova.getActivity().getBaseContext().getPackageName() + ".provider", backgroundImageFile);
 
       intent.setDataAndType(backgroundUri, "image/*");
 
       // Instantiate activity and verify it will resolve implicit intent
       Activity activity = this.cordova.getActivity();
-      activity.grantUriPermission("com.instagram.android", stickerUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+      activity.grantUriPermission("com.instagram.android", backgroundUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
       activity.startActivityForResult(intent, 0);
       callbackContext.success("shared");
