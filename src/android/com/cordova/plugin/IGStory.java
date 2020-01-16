@@ -12,19 +12,23 @@ import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
 import android.content.pm.PackageManager;
+
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 
 import android.util.Log;
+import android.util.Base64;
 
 import java.io.FileOutputStream;
 import android.net.Uri;
 import android.content.Intent;
 import android.app.Activity;
-import  java.net.URL;
+import java.net.URL;
 import java.io.File;
 import java.io.IOException;
 import androidx.core.content.FileProvider;
 import java.io.InputStream;
+
 import android.os.Build;
 
 public class IGStory extends CordovaPlugin {
@@ -144,7 +148,7 @@ public class IGStory extends CordovaPlugin {
 
     try {
       File parentDir = this.webView.getContext().getExternalFilesDir(null);
-      File backgroundImageFile = File.createTempFile("instagramBackground", ".jpeg", parentDir);
+      File backgroundImageFile = File.createTempFile("instagramBackground", ".jpg", parentDir);
       Log.i(TAG, "made it here");
 
       saveImage(backgroundImageData, backgroundImageFile);
@@ -224,7 +228,10 @@ public class IGStory extends CordovaPlugin {
     }
 
     try {
-      os.write(imageData.getBytes());
+      String encodedImg = imageData.substring(imageData.indexOf(";base64,") + 8);
+      byte[] imgBytesData = Base64.decode(encodedImg, Base64.DEFAULT);
+      
+      os.write(imgBytesData);
       os.flush();
       os.close();
     } catch (IOException e) {
