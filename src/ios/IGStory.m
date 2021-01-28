@@ -61,8 +61,24 @@
             });
         }
     }
+}
 
-    
+- (void)shareImageToStory:(CDVInvokedUrlCommand *)command {
+
+    self.callbackId = command.callbackId;
+
+    NSString* backgroundImage = [command.arguments objectAtIndex:0];
+    NSData *imageData = [self getImageData:backgroundImage];
+    if (!imageData) {
+        CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Missing Image background"];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self finishCommandWithResult:result commandId: command.callbackId];
+        });
+        return;
+    }    
+
+    [self shareBackgroundAndStickerImage:imageData stickerImage:nil attributionURL:nil commandId:command.callbackId];
+
 }
 
 - (void)shareBackgroundAndStickerImage:(NSData *)backgroundImage stickerImage:(NSData *)stickerImage attributionURL:(NSString *)attributionURL commandId:(NSString *)command  {
@@ -76,9 +92,15 @@
 
       // Assign background and sticker image assets and
       // attribution link URL to pasteboard
-      NSArray *pasteboardItems = @[@{@"com.instagram.sharedSticker.backgroundImage" : backgroundImage,
-                                     @"com.instagram.sharedSticker.stickerImage" : stickerImage,
-                                     @"com.instagram.sharedSticker.contentURL" : attributionURL}];
+      NSMutableDictionary *pasteboardItemsDictionary = [@{ @"com.instagram.sharedSticker.backgroundImage" : backgroundImage } mutableCopy];
+      if (stickerImage) {
+        pasteboardItemsDictionary[@"com.instagram.sharedSticker.stickerImage"] = stickerImage;
+      }
+      if (attributionURL) {
+        pasteboardItemsDictionary[@"com.instagram.sharedSticker.contentURL"] = attributionURL;
+      }
+
+      NSArray *pasteboardItems = @[pasteboardItemsDictionary];
       NSDictionary *pasteboardOptions = @{UIPasteboardOptionExpirationDate : [[NSDate date] dateByAddingTimeInterval:60 * 5]};
       // This call is iOS 10+, can use 'setItems' depending on what versions you support
       [[UIPasteboard generalPasteboard] setItems:pasteboardItems options:pasteboardOptions];
@@ -147,6 +169,31 @@
             [self finishCommandWithResult:result commandId: command];
         });
     }
+}
+
+
+// Pulled from https://github.com/EddyVerbruggen/SocialSharing-PhoneGap-Plugin and slightly modified
+- (NSData *)getImageData:(NSString *)imageName {
+  NSData *imageData = nil;
+  if (imageName != (id)[NSNull null]) {
+    if ([imageName hasPrefix:@"http"]) {
+      imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:imageName]];
+    } else if ([imageName hasPrefix:@"file://"]) {
+      imageData = [NSData dataWithContentsOfFile:[[NSURL URLWithString:imageName] path]];
+    } else if ([imageName hasPrefix:@"data:"]) {
+      // using a base64 encoded string
+      NSURL *imageURL = [NSURL URLWithString:imageName];
+      imageData = [NSData dataWithContentsOfURL:imageURL];
+    } else if ([imageName hasPrefix:@"assets-library://"]) {
+      // use assets-library
+      NSURL *imageURL = [NSURL URLWithString:imageName];
+      imageData = [NSData dataWithContentsOfURL:imageURL];
+    } else {
+      // assume anywhere else, on the local filesystem
+      imageData = [NSData dataWithContentsOfFile:imageName];
+    }
+  }
+  return imageData;
 }
 
 - (void)finishCommandWithResult:(CDVPluginResult *)result commandId:(NSString *)command {
